@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloc de Notas</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-black">
+  <div id="root"></div>
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    function App() {
+      const [notes, setNotes] = useState(() => JSON.parse(localStorage.getItem('notes')) || []);
+      const [view, setView] = useState('list');
+      const [active, setActive] = useState(null);
+      const [title, setTitle] = useState('');
+      const [content, setContent] = useState('');
+
+      useEffect(() => { localStorage.setItem('notes', JSON.stringify(notes)); }, [notes]);
+
+      const goList = () => setView('list');
+      const goEdit = (n = null) => {
+        setActive(n); setTitle(n ? n.title : ''); setContent(n ? n.content : ''); setView('edit');
+      };
+      const save = () => {
+        if(!title && !content) return;
+        if(active) {
+          setNotes(notes.map(n => n.id === active.id ? {...n, title, content} : n));
+        } else {
+          setNotes([{id: Date.now(), title: title || 'Sin título', content}, ...notes]);
+        }
+        goList();
+      };
+      const del = (id) => { setNotes(notes.filter(n => n.id !== id)); goList(); };
+
+      if(view === 'edit') return (
+        <div className="flex flex-col h-screen bg-white sm:max-w-md sm:mx-auto">
+          <header className="p-4 flex justify-between border-b items-center">
+            <button onClick={goList} className="text-2xl">🔙</button>
+            <button onClick={save} className="bg-blue-600 text-white px-4 py-2 rounded font-medium">Guardar</button>
+          </header>
+          <main className="p-4 flex-1 flex flex-col">
+            <input value={title} onChange={e=>setTitle(e.target.value)} placeholder="Título" className="text-2xl font-bold mb-4 outline-none w-full"/>
+            <textarea value={content} onChange={e=>setContent(e.target.value)} placeholder="Escribe aquí..." className="flex-1 outline-none text-lg resize-none w-full"></textarea>
+          </main>
+        </div>
+      );
+
+      return (
+        <div className="flex flex-col h-screen bg-gray-50 sm:max-w-md sm:mx-auto relative">
+          <header className="bg-blue-600 text-white p-4 text-xl font-bold shadow-md">Mis Notas</header>
+          <main className="p-4 flex-1 overflow-y-auto pb-20">
+            {notes.length === 0 && <p className="text-center text-gray-400 mt-10">No hay notas</p>}
+            {notes.map(n => (
+              <div key={n.id} className="bg-white p-4 rounded-xl shadow-sm mb-3 border relative">
+                <h2 className="font-semibold text-lg pr-16 truncate">{n.title}</h2>
+                <p className="text-gray-500 truncate mt-1">{n.content}</p>
+                <div className="absolute top-4 right-4 flex gap-3 text-xl">
+                  <button onClick={()=>goEdit(n)}>✏️</button>
+                  <button onClick={()=>del(n.id)}>🗑️</button>
+                </div>
+              </div>
+            ))}
+          </main>
+          <button onClick={()=>goEdit()} className="absolute bottom-6 right-6 bg-blue-600 text-white w-14 h-14 rounded-full text-3xl shadow-lg flex items-center justify-center hover:bg-blue-700">+</button>
+        </div>
+      );
+    }
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
